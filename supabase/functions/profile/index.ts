@@ -1,4 +1,4 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient, SupabaseClient } from "jsr:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -24,6 +24,8 @@ interface YMD {
 }
 
 async function createProfile(supabaseClient: SupabaseClient, profile: Profile) {
+  console.log("start createProfile function");
+
   const { error } = await supabaseClient.from("profiles").insert(profile);
   if (error) throw error;
 
@@ -34,8 +36,10 @@ async function createProfile(supabaseClient: SupabaseClient, profile: Profile) {
 }
 
 async function getUserProfile(supabaseClient: SupabaseClient, id: string) {
+  console.log("start getUserProfile function");
+
   const { data, error } = await supabaseClient
-    .from("v_user_profile_with_exercise_logs")
+    .from("v_user_profile_with_exercise_days")
     .select("*")
     .eq("id", id);
   if (error) throw error;
@@ -58,12 +62,12 @@ async function getUserProfile(supabaseClient: SupabaseClient, id: string) {
     const yesterday = new Date(today);
     yesterday.setDate(today.getDate() - 1);
 
-    let lastDate = null;
+    let lastDate: Date | null = null;
     let totalDayCount = 0;
     let currentStreak = 0;
     let isStreakActive =
-      data[0].exercise_date.toDateString() === today.toDateString() ||
-      data[0].exercise_date.toDateString() === yesterday.toDateString();
+      areDatesEqual(new Date(data[0].exercise_date), today) ||
+      areDatesEqual(new Date(data[0].exercise_date), yesterday);
 
     for (const record of data) {
       const recordDate = new Date(record.exercise_date);
@@ -97,12 +101,23 @@ async function getUserProfile(supabaseClient: SupabaseClient, id: string) {
   }
 }
 
+function areDatesEqual(date1: Date, date2: Date): boolean {
+  const d1 = new Date(date1.getFullYear(), date1.getMonth(), date1.getDate());
+  const d2 = new Date(date2.getFullYear(), date2.getMonth(), date2.getDate());
+
+  return d1.getTime() === d2.getTime();
+}
+
 function isOneDayBefore(beforeDate: Date, afterDate: Date): boolean {
   const d1 = new Date(
-    Date(beforeDate.getFullYear(), beforeDate.getMonth(), beforeDate.getDate())
+    new Date(
+      beforeDate.getFullYear(),
+      beforeDate.getMonth(),
+      beforeDate.getDate()
+    )
   );
   const d2 = new Date(
-    Date(afterDate.getFullYear(), afterDate.getMonth(), afterDate.getDate())
+    new Date(afterDate.getFullYear(), afterDate.getMonth(), afterDate.getDate())
   );
 
   d2.setDate(d2.getDate() - 1);
@@ -129,14 +144,14 @@ Deno.serve(async (req) => {
       }
     );
 
-    const profilePattern = new URLPattern({ pathname: "/profile" });
+    const profilePattern = new URLPattern({ pathname: "/profile/:id" });
     const matchingPath = profilePattern.exec(url);
     const id = matchingPath ? matchingPath.pathname.groups.id : null;
 
-    let profile = null;
+    let profile: Profile | null = null;
     if (method === "POST") {
       const body = await req.json();
-      profile = body.profile;
+      profile = body;
     }
 
     switch (true) {
