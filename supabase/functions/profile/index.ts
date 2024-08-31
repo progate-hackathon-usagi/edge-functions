@@ -44,7 +44,7 @@ async function getUserProfile(supabaseClient: SupabaseClient, id: string) {
   } else if (data.length === 1) {
     const userProfileResponse: UserProfileResponse = {
       id: data[0].id,
-      name: data[0].user_name,
+      name: data[0].username,
       total_exercise_day_count: 0,
       current_exercise_day_streak: 0,
     };
@@ -124,6 +124,7 @@ function isOneDayBefore(beforeDate: Date, afterDate: Date): boolean {
 
 Deno.serve(async (req) => {
   const { url, method } = req;
+  console.log("url: ", url, ", method: ", method);
 
   if (method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -148,6 +149,7 @@ Deno.serve(async (req) => {
     let profile: Profile | null = null;
     if (method === "POST") {
       const body = await req.json();
+      console.log("body: ", body);
       profile = body;
     }
 

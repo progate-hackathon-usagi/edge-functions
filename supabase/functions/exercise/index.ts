@@ -56,6 +56,7 @@ async function getExerciseLogsForMonth(
 
 Deno.serve(async (req) => {
   const { url, method } = req;
+  console.log("url: ", url, ", method: ", method);
 
   if (method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -84,6 +85,7 @@ Deno.serve(async (req) => {
     let exerciseLog: ExerciseLog | null = null;
     if (method === "POST") {
       const body = await req.json();
+      console.log("body: ", body);
       exerciseLog = body;
     }
 
