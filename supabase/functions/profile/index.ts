@@ -12,15 +12,10 @@ interface Profile {
 }
 
 interface UserProfileResponse {
+  id: string;
   name: string;
   total_exercise_day_count: number;
   current_exercise_day_streak: number;
-}
-
-interface YMD {
-  year: number;
-  month: number;
-  day: number;
 }
 
 async function createProfile(supabaseClient: SupabaseClient, profile: Profile) {
@@ -48,6 +43,7 @@ async function getUserProfile(supabaseClient: SupabaseClient, id: string) {
     throw new Error("User not found");
   } else if (data.length === 1) {
     const userProfileResponse: UserProfileResponse = {
+      id: data[0].id,
       name: data[0].user_name,
       total_exercise_day_count: 0,
       current_exercise_day_streak: 0,
@@ -87,6 +83,7 @@ async function getUserProfile(supabaseClient: SupabaseClient, id: string) {
     }
 
     const userProfileResponse: UserProfileResponse = {
+      id: data[0].id,
       name: data[0].username,
       total_exercise_day_count: totalDayCount,
       current_exercise_day_streak: currentStreak,
@@ -156,7 +153,7 @@ Deno.serve(async (req) => {
 
     switch (true) {
       case method === "POST":
-        return createProfile(supabaseClient, profile);
+        return createProfile(supabaseClient, profile as Profile);
       case id && method === "GET":
         return getUserProfile(supabaseClient, id as string);
       default:
