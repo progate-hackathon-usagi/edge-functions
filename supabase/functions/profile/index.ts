@@ -3,7 +3,7 @@ import { createClient, SupabaseClient } from "jsr:@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
 };
 
 interface Profile {
@@ -27,6 +27,21 @@ async function createProfile(supabaseClient: SupabaseClient, profile: Profile) {
   return new Response(JSON.stringify({ profile }), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
     status: 201,
+  });
+}
+
+async function updateProfile(supabaseClient: SupabaseClient, profile: Profile) {
+  console.log("start updateProfile function");
+
+  const { error } = await supabaseClient
+    .from("profiles")
+    .update(profile)
+    .eq("id", profile.id);
+  if (error) throw error;
+
+  return new Response(JSON.stringify({ profile }), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    status: 200,
   });
 }
 
@@ -147,7 +162,7 @@ Deno.serve(async (req) => {
     const id = matchingPath ? matchingPath.pathname.groups.id : null;
 
     let profile: Profile | null = null;
-    if (method === "POST") {
+    if (method === "POST" || method === "PUT") {
       const body = await req.json();
       console.log("body: ", body);
       profile = body;
@@ -158,6 +173,8 @@ Deno.serve(async (req) => {
         return createProfile(supabaseClient, profile as Profile);
       case id && method === "GET":
         return getUserProfile(supabaseClient, id as string);
+      case id && method === "PUT":
+        return updateProfile(supabaseClient, profile as Profile);
       default:
         throw new Error("Invalid request");
     }
